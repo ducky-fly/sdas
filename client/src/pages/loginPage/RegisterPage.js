@@ -91,7 +91,7 @@ const RegisterPage = () => {
         </div>
       </div>
     );
-  }else{
+  } else {
     return (
       <div className="w-[100vw] h-[100vh] bg-[#121212] flex justify-center items-center">
         <div className="w-full h-full bg-white p-8 flex flex-col justify-center items-center gap-[50px]">
@@ -136,7 +136,7 @@ const RegisterPage = () => {
             <div className="flex flex-row justify-center gap-1 mt-4">
               Bạn đã có tài khoản?
               <p className="font-bold">
-                <Link to="/">Đăng nhập</Link>
+                <Link to="/LoginPage">Đăng nhập</Link>
               </p>
             </div>
           </div>
