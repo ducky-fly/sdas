@@ -1,32 +1,41 @@
 const mongoose = require("mongoose");
 
-const schema = new mongoose.Schema({
-  title: {
+const productSchema = new mongoose.Schema({
+  name: {
     type: String,
-    required: [true, "please add the title"],
+    required: [true, "Vui lòng nhập tên sản phẩm"],
   },
-  artist: {
-    type: String,
-    required: [true, "please add the artist"],
+  price: {
+    type: Number,
+    required: [true, "Vui lòng nhập giá tiền"],
+    min: [0, "Giá tiền phải lớn hơn hoặc bằng 0"],
   },
-  lyrics: {
+  description: {
     type: String,
-    required: [true, "please add the Lyrics"],
-  },
-  url_audio: {
-    type: String,
-    required: [true, "please add the url_audio"],
+    required: [true, "Vui lòng nhập mô tả sản phẩm"],
   },
   url_img: {
     type: String,
-    required: [true, "please add the url_audio"],
+    required: [true, "Vui lòng cung cấp ảnh sản phẩm"],
   },
-  releaseDate: {
-    type: String,
-    required: [true, "please add the ReleaseDate"],
+  ratings: [
+    {
+      userId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+      star: {
+        type: Number,
+        min: 1,
+        max: 5,
+      },
+    },
+  ],
+
+  createdAt: {
+    type: Date,
+    default: Date.now,
   },
-  likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "users" }],
-  views: { type: Number, default: 0 },
 });
 
-module.exports = mongoose.model("Song", schema);
+module.exports = mongoose.model("Product", productSchema);

@@ -1,23 +1,18 @@
 const mongoose = require("mongoose");
 
-const commentSchema = new mongoose.Schema(
-  {
-    songId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "Song",
-      required: true,
-    },
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "users",
-      required: true,
-    },
-    content: {
-      type: String,
-      required: true,
-    },
+const commentSchema = new mongoose.Schema({
+  productId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Product",
+    required: true,
   },
-  { timestamps: true }
-);
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "users",
+    required: true,
+  },
+  content: { type: String, required: true },
+  star: { type: Number, default: 0 }, // nếu có
+});
 
-module.exports = mongoose.model("Comment", commentSchema);
+module.exports = mongoose.model("CommentProduct", commentSchema);

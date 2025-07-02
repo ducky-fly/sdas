@@ -5,11 +5,11 @@ const {
 } = require("../../../middlewares/validateAccessToken");
 const { auth } = require("../../../middlewares/auth");
 const {
-  toggleLike,
   incrementView,
   getSongStats,
   createComment,
-  getCommentsBySong,
+  getCommentsByProduct,
+  rateSong,
 } = require("../../../controllers/commetController");
 const {
   getAlbumsByUser,
@@ -25,14 +25,14 @@ const router = express.Router();
 router.route("/current").get(validateAccessToken, current);
 router.patch("/view/:id", incrementView);
 router.get("/stats/:id", validateAccessToken, getSongStats);
-router.patch("/like/:id", validateAccessToken, auth(["user"]), toggleLike);
+router.patch("/like/:id", validateAccessToken, auth(["user"]), rateSong);
 router.route("/getData").get(dataSongs);
 
 // route comment
 router.route("/createComment").post(validateAccessToken, createComment);
 router
   .route("/getCommentsBySong/:id")
-  .get(validateAccessToken, getCommentsBySong);
+  .get(validateAccessToken, getCommentsByProduct);
 
 // route album
 router.route("/getAlbumDetail/:id").get(validateAccessToken, getAlbumDetail);

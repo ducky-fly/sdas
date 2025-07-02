@@ -25,9 +25,6 @@ const validateAccessToken = asyncHandler(async (req, res, next) => {
     const email = decoded.user.email;
     const user = await User.findOne({ email });
 
-
-
-
     if (!user) {
       res.status(404);
       throw new Error("User not found");

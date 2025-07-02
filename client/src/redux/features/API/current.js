@@ -14,18 +14,18 @@ const refreshAccessToken = async () => {
       { withCredentials: true }
     );
     const newAccessToken = response.data.accessToken;
-    localStorage.setItem("MUSIC_ACCESSTOKEN", newAccessToken);
+    localStorage.setItem("COOKiNG_ACCESSTOKEN", newAccessToken);
     return newAccessToken;
   } catch (error) {
     console.error("FAILED TO REFRESH TOKEN1");
-    localStorage.removeItem("MUSIC_ACCESSTOKEN");
+    localStorage.removeItem("COOKiNG_ACCESSTOKEN");
     return null;
   }
 };
 
 export const current = createAsyncThunk("API/current", async () => {
   try {
-    const accessToken = localStorage.getItem("MUSIC_ACCESSTOKEN");
+    const accessToken = localStorage.getItem("COOKiNG_ACCESSTOKEN");
     let config = {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -55,8 +55,8 @@ export const current = createAsyncThunk("API/current", async () => {
           console.error("FAILED TO REFRESH TOKEN");
         }
       } else {
-        localStorage.removeItem("MUSIC_EMAIL");
-        localStorage.removeItem("MUSIC_USERNAME");
+        localStorage.removeItem("COOKiNG_EMAIL");
+        localStorage.removeItem("COOKiNG_USERNAME");
       }
     }
     throw new error("Vui long dang nhap lai");
@@ -74,7 +74,7 @@ export const currentSlice = createSlice({
       })
       .addCase(current.fulfilled, (state, action) => {
         state.status = "successed";
-        state.response = action.payload;
+        state.data = action.payload;
       })
       .addCase(current.rejected, (state, action) => {
         state.status = "failed";

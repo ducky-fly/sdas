@@ -1,10 +1,10 @@
 const express = require("express");
 const uploadFilesMiddleware = require("../../middlewares/upLoad");
 const {
-  uploadAudio: uploadController,
-  updateAudio: updateAudioController,
-  adminAuth,
-  deleteAudio,
+  deleteProduct,
+  getAllProducts,
+  uploadProduct,
+  updateProduct,
 } = require("../../controllers/adminController");
 const router = express.Router();
 const { auth } = require("../../middlewares/auth");
@@ -12,27 +12,25 @@ const {
   validateAccessToken,
 } = require("../../middlewares/validateAccessToken");
 
+router.route("/admin/getValue").get(getAllProducts);
 router
-  .route("/admin/getValue")
-  .get(validateAccessToken, auth(["admin"]), adminAuth);
-router
-  .route("/admin/uploadAudio")
+  .route("/admin/uploadProduct")
   .post(
     validateAccessToken,
     auth(["admin"]),
     uploadFilesMiddleware,
-    uploadController
+    uploadProduct
   );
 router
-  .route("/admin/updatedAudio/:id")
+  .route("/admin/updateProduct/:id")
   .put(
     validateAccessToken,
     auth(["admin"]),
     uploadFilesMiddleware,
-    updateAudioController
+    updateProduct
   );
 router
-  .route("/admin/deleteAudio/:id")
-  .delete(validateAccessToken, auth(["admin"]), deleteAudio);
+  .route("/admin/deleteProduct/:id")
+  .delete(validateAccessToken, auth(["admin"]), deleteProduct);
 
 module.exports = router;

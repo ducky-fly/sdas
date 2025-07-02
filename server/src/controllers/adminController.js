@@ -1,4 +1,5 @@
 const songModel = require("../models/songModel");
+const productModel = require("../models/songModel");
 const asyncHandler = require("express-async-handler");
 const { DateTime } = require("luxon");
 const { cloudinary } = require("../configs/cloudinaryConfig");
@@ -6,153 +7,148 @@ const { cloudinary } = require("../configs/cloudinaryConfig");
 //@desc adminAuth
 //@route GET /api/admin/auth
 //@access private
-const adminAuth = asyncHandler(async (req, res) => {
+const getAllProducts = asyncHandler(async (req, res) => {
   try {
-    const allSongs = await songModel.find(); // lấy tất cả dữ liệu
+    const allProducts = await productModel.find(); // lấy toàn bộ sản phẩm
+
     res.status(200).json({
-      message: "lấy dữ liệu thành công",
+      message: "Lấy danh sách sản phẩm thành công",
       success: true,
-      songs: allSongs,
+      products: allProducts,
     });
   } catch (error) {
-    res.status(500).json({ message: "Lỗi khi lấy dữ liệu bài hát", error });
+    res.status(500).json({
+      message: "Lỗi khi lấy danh sách sản phẩm",
+      error: error.message,
+    });
   }
 });
 
 //@desc adminAuth
 //@route post /api/admin/uploadAudio
 //@access private
-const uploadAudio = asyncHandler(async (req, res) => {
+const uploadProduct = asyncHandler(async (req, res) => {
   try {
-    const { title, artist, lyrics } = req.body;
-    const fileAudio = req.audio;
+    const { name, price, description } = req.body;
     const fileImage = req.image;
-
-    if (!fileAudio) {
-      return res.status(400).json({ message: "No audio file uploaded" });
-    }
 
     if (!fileImage) {
-      return res.status(400).json({ message: "No image file uploaded" });
+      return res.status(400).json({ message: "Chưa upload ảnh sản phẩm" });
     }
-    const audioUrl = fileAudio.path;
+
     const imageUrl = fileImage.path;
-    const time = String(
-      DateTime.now().setZone("Asia/Ho_Chi_Minh").toFormat("yyyy-MM-dd HH:mm:ss")
-    );
 
-    if (!title || !artist || !lyrics) {
-      return res.status(400).json({ message: "Missing required fields" });
+    // Kiểm tra các trường bắt buộc
+    if (!name || !price || !description) {
+      return res.status(400).json({ message: "Thiếu thông tin sản phẩm" });
     }
 
-    const audio = await songModel.create({
-      title,
-      artist,
-      lyrics,
-      url_audio: audioUrl,
+    const product = await productModel.create({
+      name,
+      price,
+      description,
       url_img: imageUrl,
-      releaseDate: time,
     });
 
-    if (audio) {
-      res
-        .status(201)
-        .json({ message: "Upload thành công!", audio, success: true });
+    if (product) {
+      res.status(201).json({
+        message: "Đăng sản phẩm thành công!",
+        product,
+        success: true,
+      });
     } else {
       res.status(400);
-      throw new Error("Song data is not valid");
+      throw new Error("Dữ liệu sản phẩm không hợp lệ");
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ message: err.message });
   }
 });
-
-const updateAudio = asyncHandler(async (req, res) => {
+const updateProduct = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
-    const { title, artist, lyrics } = req.body;
+    const { name, price, description } = req.body;
     const fileImage = req.image;
-    const imageUrl = fileImage ? fileImage.path : null; // URL của image (ảnh)
+    const imageUrl = fileImage ? fileImage.path : null;
 
-    // Lấy thông tin bài hát từ database
-    const song = await songModel.findById(id);
-    if (!song) {
-      return res
-        .status(404)
-        .json({ message: "Không tìm thấy bài hát với ID này" });
+    // Kiểm tra sản phẩm có tồn tại không
+    const product = await productModel.findById(id);
+    if (!product) {
+      return res.status(404).json({ message: "Không tìm thấy sản phẩm" });
     }
 
-    if (song && song.url_img) {
-      // Xóa ảnh cũ trên Cloudinary
-      const publicId = "audios/" + song.url_img.split("/").pop().split(".")[0]; // Lấy public_id từ URL của ảnh
-      await cloudinary.uploader.destroy(publicId); // Xóa ảnh trên Cloudinary
+    // Nếu có ảnh mới thì xoá ảnh cũ khỏi Cloudinary
+    if (imageUrl && product.url_img) {
+      try {
+        const publicId = product.url_img.split("/").slice(-1)[0].split(".")[0]; // lấy tên file không đuôi
+        await cloudinary.uploader.destroy(`images/${publicId}`);
+      } catch (err) {
+        console.warn("Không thể xoá ảnh cũ trên Cloudinary:", err.message);
+      }
     }
-    const time = String(
-      DateTime.now().setZone("Asia/Ho_Chi_Minh").toFormat("yyyy-MM-dd HH:mm:ss")
-    );
 
-    // Chỉ thêm vào updateData những field nào có dữ liệu
-    const updateData = { releaseDate: time }; // Luôn cập nhật releaseDate
-    if (title) updateData.title = title;
-    if (artist) updateData.artist = artist;
-    if (lyrics) updateData.lyrics = lyrics;
+    // Chuẩn bị dữ liệu cập nhật
+    const updateData = {};
+    if (name) updateData.name = name;
+    if (price) updateData.price = price;
+    if (description) updateData.description = description;
     if (imageUrl) updateData.url_img = imageUrl;
 
-    const updatedSong = await songModel.findByIdAndUpdate(id, updateData, {
-      new: true,
+    // Cập nhật
+    const updatedProduct = await productModel.findByIdAndUpdate(
+      id,
+      updateData,
+      {
+        new: true,
+      }
+    );
+
+    res.status(200).json({
+      message: "Cập nhật sản phẩm thành công!",
+      product: updatedProduct,
     });
-    if (updatedSong) {
-      res
-
-        .status(200)
-        .json({ message: "Cập nhật thành công!", song: updatedSong });
-    } else {
-      res.status(404).json({ message: "Không tìm thấy bài hát để cập nhật" });
-    }
   } catch (error) {
-    console.log(error);
-
-    res
-      .status(500)
-      .json({ message: "Lỗi khi cập nhật bài hát", error: error.message });
+    res.status(500).json({
+      message: "Lỗi khi cập nhật sản phẩm",
+      error: error.message,
+    });
   }
 });
-
-const deleteAudio = asyncHandler(async (req, res) => {
+const deleteProduct = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
 
-    console.log(id);
-
-    // Lấy thông tin bài hát từ database
-    const song = await songModel.findById(id);
-    if (!song) {
+    // Tìm sản phẩm theo ID
+    const product = await productModel.findById(id);
+    if (!product) {
       return res
         .status(404)
-        .json({ message: "Không tìm thấy bài hát với ID này" });
-    }
-    // Xoá file ảnh trên Cloudinary (nếu có)
-    if (song.url_img) {
-      const publicIdImg =
-        "audios/" + song.url_img.split("/").pop().split(".")[0];
-      await cloudinary.uploader.destroy(publicIdImg);
+        .json({ message: "Không tìm thấy sản phẩm với ID này" });
     }
 
-    // Xoá file audio trên Cloudinary (nếu có)
-    if (song.url_audio) {
-      const publicIdAudio =
-        "audios/" + song.url_audio.split("/").pop().split(".")[0];
-      await cloudinary.uploader.destroy(publicIdAudio, {
-        resource_type: "video",
-      });
+    // Nếu có ảnh -> xoá ảnh khỏi Cloudinary
+    if (product.url_img) {
+      try {
+        const publicId = product.url_img.split("/").pop().split(".")[0];
+        await cloudinary.uploader.destroy(`images/${publicId}`); // đúng folder
+      } catch (err) {
+        console.warn("Không thể xoá ảnh Cloudinary:", err.message);
+      }
     }
-    // Xoá khỏi database
-    await songModel.findByIdAndDelete(id);
-    res.status(200).json({ message: "Xoá bài hát thành công", success: true });
+
+    // Xoá khỏi MongoDB
+    await productModel.findByIdAndDelete(id);
+
+    res.status(200).json({ message: "Xoá sản phẩm thành công", success: true });
   } catch (error) {
     res
       .status(500)
-      .json({ message: "Lỗi khi xoá bài hát", error: error.message });
+      .json({ message: "Lỗi khi xoá sản phẩm", error: error.message });
   }
 });
-module.exports = { uploadAudio, adminAuth, updateAudio, deleteAudio };
+module.exports = {
+  uploadProduct,
+  getAllProducts,
+  updateProduct,
+  deleteProduct,
+};

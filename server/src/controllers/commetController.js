@@ -2,13 +2,14 @@ const commentModel = require("../models/commetModel");
 const asyncHandler = require("express-async-handler");
 const Song = require("../models/songModel");
 const mongoose = require("mongoose");
+const productModel = require("../models/songModel");
 
 const createComment = asyncHandler(async (req, res) => {
   try {
-    const { songId, content } = req.body;
+    const { productId, content } = req.body;
 
     const newComment = new commentModel({
-      songId,
+      productId,
       userId: req.user.id,
       content,
     });
@@ -20,15 +21,15 @@ const createComment = asyncHandler(async (req, res) => {
     res.status(500).json({ error: "Không thể tạo bình luận." });
   }
 });
-const getCommentsBySong = asyncHandler(async (req, res) => {
+
+const getCommentsByProduct = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params;
 
     const comments = await commentModel
-      .find({ songId: new mongoose.Types.ObjectId(id) }) // ✅ Đúng cú pháp
-      .populate("userId", "username")
+      .find({ productId: new mongoose.Types.ObjectId(id) })
+      .populate("userId", "username") // chỉ lấy trường username
       .sort({ createdAt: -1 });
-    console.log(comments);
 
     res.status(200).json(comments);
   } catch (err) {
@@ -59,36 +60,48 @@ const incrementView = asyncHandler(async (req, res) => {
 
 // Like hoặc unlike bài hát
 // Like hoặc unlike bài hát
-const toggleLike = asyncHandler(async (req, res) => {
+
+const rateSong = asyncHandler(async (req, res) => {
   try {
-    const { id: songId } = req.params;
+    const { id: productId } = req.params;
     const userId = req.user.id;
+    const { star } = req.body;
+    console.log("hello");
 
-    const song = await Song.findById(songId);
-    if (!song) return res.status(404).json({ error: "Bài hát không tồn tại." });
+    console.log({ productId, userId, star });
 
-    const alreadyLiked = song.likes.includes(userId);
+    if (!star || star < 1 || star > 5)
+      return res.status(400).json({ error: "Số sao phải từ 1 đến 5" });
 
-    // Dùng findByIdAndUpdate để tránh lỗi version
-    const updatedSong = await Song.findByIdAndUpdate(
-      songId,
-      alreadyLiked
-        ? { $pull: { likes: userId } }
-        : { $addToSet: { likes: userId } }, // dùng $addToSet để tránh duplicate
-      { new: true } // Trả về document sau khi update
+    const product = await productModel.findById(productId);
+    if (!product)
+      return res.status(404).json({ error: "Sản phẩm không tồn tại." });
+
+    const existingRatingIndex = product.ratings.findIndex(
+      (r) => r.userId.toString() === userId
     );
 
+    if (existingRatingIndex !== -1) {
+      product.ratings[existingRatingIndex].star = star;
+    } else {
+      product.ratings.push({ userId, star });
+    }
+
+    await product.save();
+
+    const totalStars = product.ratings.reduce((acc, r) => acc + r.star, 0);
+    const avgStar = totalStars / product.ratings.length;
+
     return res.status(200).json({
-      likes: updatedSong.likes,
-      liked: !alreadyLiked,
-      totalLikes: updatedSong.likes.length,
+      message: "Đánh giá thành công",
+      averageStar: avgStar.toFixed(1),
+      totalRatings: product.ratings.length,
+      ratings: product.ratings,
     });
-  } catch (err) {
-    console.error("toggleLike error:", err);
-    return res.status(500).json({ error: "Không thể xử lý like/unlike." });
+  } catch (error) {
+    console.log(error);
   }
 });
-
 const getSongStats = asyncHandler(async (req, res) => {
   try {
     const { id: songId } = req.params;
@@ -117,8 +130,8 @@ const getSongStats = asyncHandler(async (req, res) => {
 
 module.exports = {
   createComment,
-  getCommentsBySong,
-  toggleLike,
+  getCommentsByProduct,
+  rateSong,
   getSongStats,
   incrementView,
 };
